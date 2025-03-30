@@ -17,12 +17,4 @@ end
 platforms :mingw, :x64_mingw, :mswin, :jruby do
   gem "tzinfo", ">= 1", "< 3"
   gem "tzinfo-data"
-end
-
-# 코드 하이라이팅
-gem "rouge", "~> 4.5.1"
-
-# 개발 의존성
-group :jekyll_plugins do
-  gem "jekyll-admin", :git => "https://github.com/jekyll/jekyll-admin.git"
 end 
