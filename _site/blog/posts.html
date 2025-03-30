@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>글 목록 - 브레이든의 지식 저장소</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <h1 class="site-title"><a href="/">브레이든의 지식 저장소</a></h1>
+            <nav class="site-nav">
+                <a href="/">홈</a>
+                <a href="/posts.html">글 목록</a>
+                <a href="/about.html">소개</a>
+                <a href="/subscribe.html">구독하기</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="posts-header">
+            <h1>모든 글</h1>
+            <div class="category-filter">
+                <select id="category-select">
+                    <option value="">모든 카테고리</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="posts-list" class="posts-list">
+            <!-- 글 목록이 여기에 동적으로 로드됩니다 -->
+        </div>
+
+        <div id="pagination" class="pagination">
+            <!-- 페이지네이션이 여기에 동적으로 로드됩니다 -->
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; 2024 브레이든의 지식 저장소. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        let currentPage = 1;
+        const postsPerPage = 10;
+        let currentCategory = '';
+
+        async function loadCategories() {
+            try {
+                const response = await fetch('http://localhost:3000/api/posts/categories');
+                const categories = await response.json();
+                const select = document.getElementById('category-select');
+                
+                categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('카테고리 로딩 실패:', error);
+            }
+        }
+
+        async function loadPosts(page = 1, category = '') {
+            try {
+                const response = await fetch(`http://localhost:3000/api/posts?page=${page}&limit=${postsPerPage}&category=${category}`);
+                const data = await response.json();
+                
+                const postsList = document.getElementById('posts-list');
+                postsList.innerHTML = '';
+
+                data.posts.forEach(post => {
+                    const postElement = document.createElement('article');
+                    postElement.className = 'post-card';
+                    postElement.innerHTML = `
+                        <h2><a href="/post/${post.slug}.html">${post.title}</a></h2>
+                        <div class="post-meta">
+                            <span class="post-date">${new Date(post.createdAt).toLocaleDateString()}</span>
+                            <span class="post-category">${post.category}</span>
+                        </div>
+                        <p class="post-excerpt">${post.excerpt}</p>
+                        <a href="/post/${post.slug}.html" class="read-more">자세히 보기</a>
+                    `;
+                    postsList.appendChild(postElement);
+                });
+
+                // 페이지네이션 생성
+                const totalPages = Math.ceil(data.total / postsPerPage);
+                const pagination = document.getElementById('pagination');
+                pagination.innerHTML = '';
+
+                for (let i = 1; i <= totalPages; i++) {
+                    const button = document.createElement('button');
+                    button.textContent = i;
+                    button.className = i === page ? 'active' : '';
+                    button.onclick = () => loadPosts(i, currentCategory);
+                    pagination.appendChild(button);
+                }
+            } catch (error) {
+                console.error('글 목록 로딩 실패:', error);
+            }
+        }
+
+        document.getElementById('category-select').addEventListener('change', (e) => {
+            currentCategory = e.target.value;
+            currentPage = 1;
+            loadPosts(currentPage, currentCategory);
+        });
+
+        // 초기 로딩
+        loadCategories();
+        loadPosts();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,36 @@
+title: 브레이든의 지식 저장소
+description: 지식과 경험을 공유하는 공간
+url: https://brayden-kim.github.io
+baseurl: "/blog" # blog 서브디렉토리 사용
+
+# 빌드 설정
+markdown: kramdown
+permalink: /:year/:month/:day/:title/
+paginate: 10
+
+# 컬렉션 설정
+collections:
+  posts:
+    output: true
+    permalink: /:collection/:title/
+
+# 플러그인
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# 기본 레이아웃 설정
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+      comments: false
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+      comments: false 

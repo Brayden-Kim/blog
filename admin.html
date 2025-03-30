@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 페이지 - 브레이든의 지식 저장소</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        /* 페이지 전환 애니메이션 */
+        .page-transition {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 탭 전환 애니메이션 */
+        .tab-content {
+            transition: opacity 0.3s ease;
+        }
+
+        .tab-content.hidden {
+            opacity: 0;
+        }
+
+        /* 미리보기 모달 애니메이션 */
+        .modal-backdrop {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-backdrop.show {
+            opacity: 1;
+        }
+
+        .modal-content {
+            opacity: 0;
+            transform: scale(0.95) translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .modal-content.show {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        /* 제목 입력 칸 높이 조정 */
+        #title {
+            min-height: 3rem;
+            height: auto;
+            resize: vertical;
+        }
+
+        /* 미리보기 스타일 */
+        .preview-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .preview-content h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            color: #1a1a1a;
+        }
+
+        .preview-content .meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .preview-content .category {
+            background: #e5e7eb;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            color: #374151;
+        }
+
+        .preview-content .content {
+            line-height: 1.8;
+            color: #1a1a1a;
+        }
+
+        .preview-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            margin: 2rem 0;
+        }
+
+        /* 버튼 물결 효과 */
+        .ripple {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ripple::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            transform: scale(0);
+            transition: transform 0.3s ease;
+            border-radius: inherit;
+        }
+
+        .ripple:active::after {
+            transform: scale(2);
+            opacity: 0;
+            transition: transform 0.6s ease, opacity 0.6s ease;
+        }
+
+        /* 테이블 행 호버 효과 */
+        .table-row {
+            transition: all 0.2s ease;
+        }
+
+        .table-row:hover {
+            background-color: rgba(79, 70, 229, 0.05);
+            transform: translateX(10px);
+        }
+
+        /* 마크다운 스타일 */
+        .markdown-preview {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .markdown-preview h1 {
+            font-size: 2em;
+            margin-bottom: 0.5em;
+            font-weight: bold;
+        }
+
+        .markdown-preview h2 {
+            font-size: 1.5em;
+            margin-bottom: 0.5em;
+            font-weight: bold;
+        }
+
+        .markdown-preview h3 {
+            font-size: 1.25em;
+            margin-bottom: 0.5em;
+            font-weight: bold;
+        }
+
+        .markdown-preview p {
+            margin-bottom: 1em;
+            line-height: 1.6;
+        }
+
+        .markdown-preview ul, .markdown-preview ol {
+            margin-bottom: 1em;
+            padding-left: 2em;
+        }
+
+        .markdown-preview li {
+            margin-bottom: 0.5em;
+        }
+
+        .markdown-preview code {
+            background-color: #f3f4f6;
+            padding: 0.2em 0.4em;
+            border-radius: 0.25em;
+            font-family: monospace;
+        }
+
+        .markdown-preview pre {
+            background-color: #f3f4f6;
+            padding: 1em;
+            border-radius: 0.5em;
+            overflow-x: auto;
+            margin-bottom: 1em;
+        }
+
+        .markdown-preview blockquote {
+            border-left: 4px solid #e5e7eb;
+            padding-left: 1em;
+            margin-bottom: 1em;
+            color: #6b7280;
+        }
+
+        .markdown-preview img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 1em;
+        }
+
+        .markdown-preview table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1em;
+        }
+
+        .markdown-preview th, .markdown-preview td {
+            border: 1px solid #e5e7eb;
+            padding: 0.5em;
+            text-align: left;
+        }
+
+        .markdown-preview th {
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- 네비게이션 바 -->
+    <nav class="bg-white shadow-lg fixed w-full z-10">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="index.html" class="text-xl font-bold text-gray-800">브레이든의 지식 저장소</a>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="about.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            작가 소개
+                        </a>
+                        <a href="posts.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            글
+                        </a>
+                        <a href="archive.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            아카이브
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- 검색 버튼 -->
+                    <button type="button" class="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500" id="searchButton">
+                        <span class="sr-only">검색</span>
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </button>
+                    <!-- 구독 버튼 -->
+                    <a href="subscribe.html" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        구독하기
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 검색 모달 -->
+    <div class="fixed inset-0 z-50 hidden" id="searchModal">
+        <div class="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6">
+                    <div class="absolute right-0 top-0 hidden sm:block">
+                        <button type="button" class="rounded-md p-2.5 text-gray-400 hover:text-gray-500" id="closeSearchModal">
+                            <span class="sr-only">닫기</span>
+                            <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="sm:flex sm:items-start">
+                        <div class="w-full">
+                            <div class="relative mt-2">
+                                <input type="text" name="search" id="search" class="block w-full rounded-lg border-0 py-4 pl-6 pr-14 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 text-lg" placeholder="검색어를 입력하세요">
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-4">
+                                    <svg class="h-6 w-6 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="mt-6 max-h-[60vh] overflow-y-auto" id="searchResults">
+                                <!-- 검색 결과가 여기에 표시됩니다 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 개인정보 수집 및 이용 동의 모달 -->
+    <div class="fixed inset-0 z-50 hidden" id="privacyModal">
+        <div class="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                    <div class="absolute right-0 top-0 pr-4 pt-4">
+                        <button type="button" class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" id="closePrivacyModal">
+                            <span class="sr-only">닫기</span>
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="sm:flex sm:items-start">
+                        <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                            <h3 class="text-lg font-semibold leading-6 text-gray-900 mb-4">개인정보 수집 및 이용 동의</h3>
+                            <div class="mt-2 text-sm text-gray-500 space-y-4">
+                                <p class="font-medium text-gray-700">1. 수집하는 개인정보 항목</p>
+                                <p>- 이메일 주소</p>
+                                
+                                <p class="font-medium text-gray-700">2. 수집 목적</p>
+                                <p>- 새로운 글 발행 알림 서비스 제공</p>
+                                <p>- 중요 공지사항 및 업데이트 안내</p>
+                                
+                                <p class="font-medium text-gray-700">3. 보유 및 이용기간</p>
+                                <p>- 구독 해지 시까지</p>
+                                <p>- 구독자가 직접 해지를 요청하는 경우 즉시 파기</p>
+                                
+                                <p class="font-medium text-gray-700">4. 동의 거부권 및 거부 시 불이익</p>
+                                <p>- 개인정보 수집 및 이용 동의를 거부할 수 있으며, 거부 시 구독 서비스 이용이 제한됩니다.</p>
+                                
+                                <p class="font-medium text-gray-700">5. 개인정보 파기 절차</p>
+                                <p>- 구독 해지 시 즉시 파기</p>
+                                <p>- 이메일 주소는 복구할 수 없는 방법으로 영구 삭제됩니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                        <button type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto" id="confirmPrivacyModal">
+                            확인
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 미리보기 모달 -->
+    <div class="fixed inset-0 z-50 hidden" id="previewModal">
+        <div class="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity modal-backdrop"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl sm:p-6 modal-content">
+                    <div class="absolute right-0 top-0 pr-4 pt-4">
+                        <button type="button" class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" id="closePreviewModal">
+                            <span class="sr-only">닫기</span>
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="preview-content" id="previewContent">
+                        <!-- 미리보기 내용이 여기에 표시됩니다 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="pt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="page-transition">
+                <div class="text-center mb-12">
+                    <h1 class="text-4xl font-bold text-gray-900 mb-4">관리자 페이지</h1>
+                    <p class="text-lg text-gray-600">글 작성 및 관리, 구독자 관리를 할 수 있습니다.</p>
+                </div>
+
+                <!-- 탭 메뉴 -->
+                <div class="border-b border-gray-200 mb-8">
+                    <nav class="-mb-px flex justify-center space-x-8" aria-label="Tabs">
+                        <button onclick="switchTab('write')" class="tab-button border-b-2 border-indigo-500 py-4 px-1 text-sm font-medium text-indigo-600">
+                            새 글 작성
+                        </button>
+                        <button onclick="switchTab('manage')" class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            글 관리
+                        </button>
+                        <button onclick="switchTab('subscribers')" class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            구독자 관리
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- 새 글 작성 탭 -->
+                <div id="writeTab" class="tab-content active">
+                    <div class="max-w-3xl mx-auto">
+                        <form id="postForm" class="space-y-6">
+                            <div>
+                                <label for="title" class="block text-sm font-medium text-gray-700">제목</label>
+                                <input type="text" name="title" id="title" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+
+                            <div>
+                                <label for="category" class="block text-sm font-medium text-gray-700">카테고리</label>
+                                <select id="category" name="category" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="일상">일상</option>
+                                    <option value="문화">문화</option>
+                                    <option value="예술">예술</option>
+                                    <option value="기술">기술</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="excerpt" class="block text-sm font-medium text-gray-700">요약</label>
+                                <textarea id="excerpt" name="excerpt" rows="2" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                            </div>
+
+                            <div>
+                                <label for="content" class="block text-sm font-medium text-gray-700">내용</label>
+                                <textarea id="content" name="content" rows="10" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                            </div>
+
+                            <div>
+                                <label for="thumbnail" class="block text-sm font-medium text-gray-700">썸네일 이미지</label>
+                                <input type="file" id="thumbnail" name="thumbnail" accept="image/*" class="mt-1 block w-full">
+                                <div id="thumbnailPreview" class="mt-2 hidden">
+                                    <img src="" alt="썸네일 미리보기" class="h-32 w-auto">
+                                </div>
+                            </div>
+
+                            <div class="flex items-center">
+                                <input type="checkbox" id="isSubscriberOnly" name="isSubscriberOnly" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <label for="isSubscriberOnly" class="ml-2 block text-sm text-gray-700">구독자 전용 글</label>
+                            </div>
+
+                            <div class="flex justify-end space-x-4">
+                                <button type="button" id="previewButton" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    미리보기
+                                </button>
+                                <button type="button" onclick="saveDraft()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    임시저장
+                                </button>
+                                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    발행하기
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 글 관리 탭 -->
+                <div id="manageTab" class="tab-content hidden">
+                    <div class="max-w-6xl mx-auto">
+                        <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">제목</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">카테고리</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">작성일</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">구독자 전용</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200" id="postsTableBody">
+                                    <!-- 글 목록이 여기에 동적으로 추가됩니다 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 구독자 관리 탭 -->
+                <div id="subscribersTab" class="tab-content hidden">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이메일</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">구독일</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200" id="subscribersTableBody">
+                                    <!-- 구독자 목록이 여기에 동적으로 추가됩니다 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 푸터 -->
+    <footer class="bg-white">
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 md:flex md:items-center md:justify-between lg:px-8">
+            <div class="mt-8 md:mt-0 md:order-1">
+                <p class="text-center text-base text-gray-400">
+                    &copy; 2025 브레이든의 지식 저장소. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 페이지 로드 애니메이션
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('.page-transition').style.opacity = '1';
+            document.querySelector('.page-transition').style.transform = 'translateY(0)';
+            loadPosts();
+            loadSubscribers();
+            loadDraft();
+        });
+
+        // 탭 전환
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('border-indigo-500', 'text-indigo-600');
+                button.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            const selectedTab = document.getElementById(tabName + 'Tab');
+            const selectedButton = document.querySelector(`button[onclick="switchTab('${tabName}')"]`);
+            
+            selectedTab.classList.remove('hidden');
+            setTimeout(() => {
+                selectedTab.classList.add('active');
+            }, 50);
+            
+            selectedButton.classList.remove('border-transparent', 'text-gray-500');
+            selectedButton.classList.add('border-indigo-500', 'text-indigo-600');
+        }
+
+        // 썸네일 미리보기
+        document.getElementById('thumbnail').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('thumbnailPreview');
+                    preview.querySelector('img').src = e.target.result;
+                    preview.classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 글 작성 폼 제출
+        document.getElementById('postForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const thumbnail = document.getElementById('thumbnail').files[0];
+            
+            if (thumbnail) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    savePost(formData, e.target.result);
+                }
+                reader.readAsDataURL(thumbnail);
+            } else {
+                savePost(formData, null);
+            }
+        });
+
+        // 글 저장
+        function savePost(formData, thumbnailData) {
+            const posts = JSON.parse(localStorage.getItem('posts') || '[]');
+            const post = {
+                id: Date.now(),
+                title: formData.get('title'),
+                category: formData.get('category'),
+                excerpt: formData.get('excerpt'),
+                content: formData.get('content'),
+                thumbnail: thumbnailData,
+                date: new Date().toISOString(),
+                isSubscriberOnly: formData.get('isSubscriberOnly') === 'on'
+            };
+            
+            posts.push(post);
+            localStorage.setItem('posts', JSON.stringify(posts));
+            localStorage.removeItem('draft'); // 임시저장 삭제
+            
+            alert('글이 발행되었습니다.');
+            document.getElementById('postForm').reset();
+            document.getElementById('thumbnailPreview').classList.add('hidden');
+            loadPosts();
+        }
+
+        // 임시저장
+        function saveDraft() {
+            const formData = new FormData(document.getElementById('postForm'));
+            const thumbnail = document.getElementById('thumbnail').files[0];
+            
+            if (thumbnail) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const draft = {
+                        title: formData.get('title'),
+                        category: formData.get('category'),
+                        excerpt: formData.get('excerpt'),
+                        content: formData.get('content'),
+                        isSubscriberOnly: formData.get('isSubscriberOnly') === 'on'
+                    };
+                    localStorage.setItem('draft', JSON.stringify(draft));
+                    alert('임시저장되었습니다.');
+                }
+                reader.readAsDataURL(thumbnail);
+            } else {
+                const draft = {
+                    title: formData.get('title'),
+                    category: formData.get('category'),
+                    excerpt: formData.get('excerpt'),
+                    content: formData.get('content'),
+                    isSubscriberOnly: formData.get('isSubscriberOnly') === 'on'
+                };
+                localStorage.setItem('draft', JSON.stringify(draft));
+                alert('임시저장되었습니다.');
+            }
+        }
+
+        // 임시저장 불러오기
+        function loadDraft() {
+            const draft = JSON.parse(localStorage.getItem('draft'));
+            if (draft) {
+                document.getElementById('title').value = draft.title || '';
+                document.getElementById('category').value = draft.category || '일상';
+                document.getElementById('excerpt').value = draft.excerpt || '';
+                document.getElementById('content').value = draft.content || '';
+                document.getElementById('isSubscriberOnly').checked = draft.isSubscriberOnly || false;
+                
+                if (draft.thumbnail) {
+                    const preview = document.getElementById('thumbnailPreview');
+                    preview.querySelector('img').src = draft.thumbnail;
+                    preview.classList.remove('hidden');
+                }
+            }
+        }
+
+        // 글 목록 불러오기
+        function loadPosts() {
+            const posts = JSON.parse(localStorage.getItem('posts') || '[]');
+            const tbody = document.getElementById('postsTableBody');
+            
+            tbody.innerHTML = posts.map(post => `
+                <tr class="table-row">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${post.title}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                            ${post.category}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${new Date(post.date).toLocaleDateString()}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${post.isSubscriberOnly ? '예' : '아니오'}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="editPost(${post.id})" class="text-indigo-600 hover:text-indigo-900 mr-4">수정</button>
+                        <button onclick="deletePost(${post.id})" class="text-red-600 hover:text-red-900">삭제</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 글 수정
+        function editPost(id) {
+            const posts = JSON.parse(localStorage.getItem('posts') || '[]');
+            const post = posts.find(p => p.id === id);
+            
+            if (post) {
+                document.getElementById('title').value = post.title;
+                document.getElementById('category').value = post.category;
+                document.getElementById('excerpt').value = post.excerpt;
+                document.getElementById('content').value = post.content;
+                document.getElementById('isSubscriberOnly').checked = post.isSubscriberOnly;
+                
+                if (post.thumbnail) {
+                    const preview = document.getElementById('thumbnailPreview');
+                    preview.querySelector('img').src = post.thumbnail;
+                    preview.classList.remove('hidden');
+                }
+                
+                // 글 ID를 hidden input으로 추가
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.id = 'editPostId';
+                hiddenInput.value = id;
+                document.getElementById('postForm').appendChild(hiddenInput);
+                
+                switchTab('write');
+            }
+        }
+
+        // 글 삭제
+        function deletePost(id) {
+            if (confirm('정말로 이 글을 삭제하시겠습니까?')) {
+                const posts = JSON.parse(localStorage.getItem('posts') || '[]');
+                const filteredPosts = posts.filter(p => p.id !== id);
+                localStorage.setItem('posts', JSON.stringify(filteredPosts));
+                loadPosts();
+            }
+        }
+
+        // 구독자 목록 불러오기
+        function loadSubscribers() {
+            const subscribers = JSON.parse(localStorage.getItem('subscribers') || '[]');
+            const tbody = document.getElementById('subscribersTableBody');
+            
+            tbody.innerHTML = subscribers.map(subscriber => `
+                <tr class="table-row">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${subscriber.email}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${new Date(subscriber.date).toLocaleDateString()}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="deleteSubscriber('${subscriber.email}')" class="text-red-600 hover:text-red-900">구독 취소</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 구독자 삭제
+        function deleteSubscriber(email) {
+            if (confirm('정말로 이 구독자를 삭제하시겠습니까?')) {
+                const subscribers = JSON.parse(localStorage.getItem('subscribers') || '[]');
+                const filteredSubscribers = subscribers.filter(s => s.email !== email);
+                localStorage.setItem('subscribers', JSON.stringify(filteredSubscribers));
+                loadSubscribers();
+            }
+        }
+
+        // 미리보기 모달 관련 변수
+        const previewModal = document.getElementById('previewModal');
+        const closePreviewModalBtn = document.getElementById('closePreviewModal');
+        const previewContent = document.getElementById('previewContent');
+
+        // 미리보기 버튼 클릭 이벤트
+        document.getElementById('previewButton').addEventListener('click', function() {
+            const title = document.getElementById('title').value;
+            const category = document.getElementById('category').value;
+            const excerpt = document.getElementById('excerpt').value;
+            const content = document.getElementById('content').value;
+            const thumbnail = document.getElementById('thumbnailPreview').querySelector('img').src;
+            const isSubscriberOnly = document.getElementById('isSubscriberOnly').checked;
+
+            // 미리보기 HTML 생성
+            previewContent.innerHTML = `
+                <h1>${title}</h1>
+                <div class="meta">
+                    <span>${new Date().toLocaleDateString()}</span>
+                    <span>·</span>
+                    <span class="category">${category}</span>
+                    ${isSubscriberOnly ? '<span class="subscriber-only">구독자 전용</span>' : ''}
+                </div>
+                ${thumbnail ? `<img src="${thumbnail}" alt="${title}">` : ''}
+                <div class="content">
+                    ${marked.parse(content)}
+                </div>
+            `;
+
+            // 미리보기 모달 표시
+            previewModal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                previewModal.querySelector('.modal-backdrop').classList.add('show');
+                previewModal.querySelector('.modal-content').classList.add('show');
+            });
+        });
+
+        // 미리보기 모달 닫기 함수
+        function closePreviewModal() {
+            const backdrop = previewModal.querySelector('.modal-backdrop');
+            const content = previewModal.querySelector('.modal-content');
+            
+            backdrop.classList.remove('show');
+            content.classList.remove('show');
+            
+            setTimeout(() => {
+                previewModal.classList.add('hidden');
+            }, 300);
+        }
+
+        // 닫기 버튼 클릭 이벤트
+        closePreviewModalBtn.addEventListener('click', closePreviewModal);
+
+        // 모달 외부 클릭 시 닫기
+        previewModal.addEventListener('click', (e) => {
+            if (e.target === previewModal || e.target.classList.contains('modal-backdrop')) {
+                closePreviewModal();
+            }
+        });
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !previewModal.classList.contains('hidden')) {
+                closePreviewModal();
+            }
+        });
+
+        // 실시간 미리보기 업데이트
+        let previewTimeout;
+        ['title', 'category', 'excerpt', 'content', 'isSubscriberOnly'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                clearTimeout(previewTimeout);
+                previewTimeout = setTimeout(() => {
+                    const title = document.getElementById('title').value;
+                    const category = document.getElementById('category').value;
+                    const excerpt = document.getElementById('excerpt').value;
+                    const content = document.getElementById('content').value;
+                    const thumbnail = document.getElementById('thumbnailPreview').querySelector('img').src;
+                    const isSubscriberOnly = document.getElementById('isSubscriberOnly').checked;
+
+                    previewContent.innerHTML = `
+                        <h1>${title}</h1>
+                        <div class="meta">
+                            <span>${new Date().toLocaleDateString()}</span>
+                            <span>·</span>
+                            <span class="category">${category}</span>
+                            ${isSubscriberOnly ? '<span class="subscriber-only">구독자 전용</span>' : ''}
+                        </div>
+                        ${thumbnail ? `<img src="${thumbnail}" alt="${title}">` : ''}
+                        <div class="content">
+                            ${marked.parse(content)}
+                        </div>
+                    `;
+                }, 500);
+            });
+        });
+
+        // 마크다운 에디터 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            const contentEditor = document.getElementById('content');
+            contentEditor.addEventListener('input', updatePreview);
+            updatePreview();
+        });
+
+        // 검색 결과 필터링
+        const posts = [];
+
+        const filteredPosts = posts.filter(post => 
+            post.title.toLowerCase().includes(searchTerm) ||
+            post.excerpt.toLowerCase().includes(searchTerm) ||
+            post.category.toLowerCase().includes(searchTerm)
+        );
+
+        // 검색 결과 표시
+        if (filteredPosts.length > 0) {
+            searchResults.innerHTML = filteredPosts.map(post => `
+                <div class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <a href="${post.url}" class="block">
+                        <h4 class="text-lg font-semibold text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400">
+                            ${post.title}
+                        </h4>
+                        <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            <span>${post.date}</span>
+                            <span class="mx-2">·</span>
+                            <span>${post.category}</span>
+                        </div>
+                        <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                            ${post.excerpt}
+                        </p>
+                    </a>
+                </div>
+            `).join('');
+        } else {
+            searchResults.innerHTML = `
+                <div class="mt-4 text-center text-gray-500 dark:text-gray-400">
+                    검색 결과가 없습니다.
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html> 

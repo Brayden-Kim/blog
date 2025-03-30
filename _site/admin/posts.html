@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시글 관리 - 브레이든의 지식 저장소</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">게시글 관리</h1>
+                <p class="text-gray-600">블로그 포스트 관리 시스템</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="index.html" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                    구독자 관리
+                </a>
+                <button onclick="showNewPostForm()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    새 글 작성
+                </button>
+            </div>
+        </header>
+
+        <!-- 통계 카드 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-700">총 게시글</h3>
+                <p class="text-3xl font-bold text-blue-600" id="totalPosts">-</p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-700">발행된 글</h3>
+                <p class="text-3xl font-bold text-green-600" id="publishedPosts">-</p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-700">임시저장</h3>
+                <p class="text-3xl font-bold text-yellow-600" id="draftPosts">-</p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-700">구독자 전용</h3>
+                <p class="text-3xl font-bold text-purple-600" id="subscriberOnlyPosts">-</p>
+            </div>
+        </div>
+
+        <!-- 게시글 목록 -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">게시글 목록</h2>
+                    <div class="flex gap-4">
+                        <div class="relative">
+                            <input type="text" 
+                                   id="searchInput" 
+                                   placeholder="제목으로 검색..." 
+                                   class="border rounded px-4 py-2 w-64"
+                                   onkeyup="handleSearch()">
+                            <span class="absolute right-3 top-2.5 text-gray-400">🔍</span>
+                        </div>
+                        <select id="categoryFilter" 
+                                onchange="handleFilter()"
+                                class="border rounded px-4 py-2">
+                            <option value="all">모든 카테고리</option>
+                        </select>
+                        <select id="statusFilter" 
+                                onchange="handleFilter()"
+                                class="border rounded px-4 py-2">
+                            <option value="all">모든 상태</option>
+                            <option value="published">발행됨</option>
+                            <option value="draft">임시저장</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">제목</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">카테고리</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">작성일</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="postsList" class="bg-white divide-y divide-gray-200">
+                            <!-- 여기에 게시글 목록이 동적으로 추가됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-4 flex justify-between items-center">
+                    <div class="text-sm text-gray-500">
+                        총 <span id="totalResults">0</span>개의 결과
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="prevPage()" class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">이전</button>
+                        <span id="currentPage" class="px-3 py-1">1 / 1</span>
+                        <button onclick="nextPage()" class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">다음</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 게시글 작성/수정 모달 -->
+    <div id="postModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden">
+        <div class="fixed inset-0 flex items-center justify-center">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-screen overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-semibold text-gray-800" id="modalTitle">새 글 작성</h3>
+                        <button onclick="closePostModal()" class="text-gray-500 hover:text-gray-700">✕</button>
+                    </div>
+                    <form id="postForm" onsubmit="handlePostSubmit(event)">
+                        <input type="hidden" id="postId">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">제목</label>
+                                <input type="text" 
+                                       id="postTitle" 
+                                       class="mt-1 block w-full border rounded-md px-3 py-2"
+                                       required>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">카테고리</label>
+                                    <input type="text" 
+                                           id="postCategory" 
+                                           class="mt-1 block w-full border rounded-md px-3 py-2"
+                                           required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">태그</label>
+                                    <input type="text" 
+                                           id="postTags" 
+                                           class="mt-1 block w-full border rounded-md px-3 py-2"
+                                           placeholder="쉼표로 구분">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">요약</label>
+                                <textarea id="postExcerpt" 
+                                         class="mt-1 block w-full border rounded-md px-3 py-2"
+                                         rows="2"
+                                         required></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">내용</label>
+                                <textarea id="postContent" class="hidden"></textarea>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <label class="flex items-center">
+                                    <input type="checkbox" 
+                                           id="isSubscriberOnly" 
+                                           class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                    <span class="ml-2 text-sm text-gray-600">구독자 전용</span>
+                                </label>
+                                <div class="flex-grow"></div>
+                                <button type="button"
+                                        onclick="handleSaveDraft()"
+                                        class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                                    임시저장
+                                </button>
+                                <button type="submit"
+                                        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                                    발행하기
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let posts = [];
+        let filteredPosts = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let editor = null;
+        let categories = new Set();
+
+        // Socket.io 연결
+        const socket = io('http://localhost:3000');
+
+        // 실시간 업데이트 처리
+        socket.on('newPost', (post) => {
+            updatePostsList();
+            updateStats();
+        });
+
+        socket.on('updatePost', (post) => {
+            updatePostsList();
+            updateStats();
+        });
+
+        socket.on('deletePost', (postId) => {
+            updatePostsList();
+            updateStats();
+        });
+
+        // 게시글 목록 업데이트
+        async function updatePostsList() {
+            try {
+                const response = await fetch('http://localhost:3000/api/posts/admin/posts');
+                posts = await response.json();
+                filteredPosts = [...posts];
+                
+                // 카테고리 목록 업데이트
+                categories = new Set(posts.map(post => post.category));
+                updateCategoryFilter();
+                
+                handleFilter();
+                updatePagination();
+                displayPosts();
+            } catch (error) {
+                console.error('게시글 목록 업데이트 실패:', error);
+            }
+        }
+
+        // 통계 업데이트
+        async function updateStats() {
+            try {
+                const response = await fetch('http://localhost:3000/api/posts/admin/posts/stats');
+                const stats = await response.json();
+                
+                document.getElementById('totalPosts').textContent = stats.total;
+                document.getElementById('publishedPosts').textContent = stats.published;
+                document.getElementById('draftPosts').textContent = stats.draft;
+                document.getElementById('subscriberOnlyPosts').textContent = stats.subscriberOnly;
+            } catch (error) {
+                console.error('통계 업데이트 실패:', error);
+            }
+        }
+
+        // 카테고리 필터 업데이트
+        function updateCategoryFilter() {
+            const select = document.getElementById('categoryFilter');
+            const currentValue = select.value;
+            
+            // 기존 옵션 제거
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
+            // 새 옵션 추가
+            categories.forEach(category => {
+                const option = new Option(category, category);
+                select.add(option);
+            });
+            
+            // 이전 선택값 복원
+            if (currentValue !== 'all' && categories.has(currentValue)) {
+                select.value = currentValue;
+            }
+        }
+
+        // 검색 처리
+        function handleSearch() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            applyFilters(searchTerm);
+        }
+
+        // 필터 처리
+        function handleFilter() {
+            applyFilters();
+        }
+
+        function applyFilters(searchTerm = document.getElementById('searchInput').value.toLowerCase()) {
+            const category = document.getElementById('categoryFilter').value;
+            const status = document.getElementById('statusFilter').value;
+
+            filteredPosts = posts.filter(post => {
+                const matchesSearch = post.title.toLowerCase().includes(searchTerm);
+                const matchesCategory = category === 'all' || post.category === category;
+                const matchesStatus = status === 'all' || post.status === status;
+                return matchesSearch && matchesCategory && matchesStatus;
+            });
+
+            currentPage = 1;
+            updatePagination();
+            displayPosts();
+        }
+
+        // 페이지네이션 업데이트
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredPosts.length / itemsPerPage);
+            document.getElementById('currentPage').textContent = `${currentPage} / ${totalPages}`;
+            document.getElementById('totalResults').textContent = filteredPosts.length;
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                displayPosts();
+                updatePagination();
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(filteredPosts.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                displayPosts();
+                updatePagination();
+            }
+        }
+
+        // 게시글 목록 표시
+        function displayPosts() {
+            const tbody = document.getElementById('postsList');
+            tbody.innerHTML = '';
+
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pagePosts = filteredPosts.slice(start, end);
+
+            pagePosts.forEach(post => {
+                const row = document.createElement('tr');
+                const date = new Date(post.createdAt).toLocaleDateString('ko-KR');
+                const status = post.status === 'published' ? 
+                    '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">발행됨</span>' : 
+                    '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">임시저장</span>';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <div class="font-medium text-gray-900">${post.title}</div>
+                        ${post.isSubscriberOnly ? '<span class="text-xs text-purple-600">구독자 전용</span>' : ''}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${post.category}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${status}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <button onclick="editPost('${post._id}')" 
+                                class="text-blue-600 hover:text-blue-900 mr-3">수정</button>
+                        <button onclick="deletePost('${post._id}')" 
+                                class="text-red-600 hover:text-red-900">삭제</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 게시글 작성 모달
+        function showNewPostForm() {
+            document.getElementById('modalTitle').textContent = '새 글 작성';
+            document.getElementById('postForm').reset();
+            document.getElementById('postId').value = '';
+            
+            if (!editor) {
+                editor = new EasyMDE({
+                    element: document.getElementById('postContent'),
+                    spellChecker: false,
+                    autosave: {
+                        enabled: true,
+                        uniqueId: 'postEditor'
+                    }
+                });
+            } else {
+                editor.value('');
+            }
+            
+            document.getElementById('postModal').classList.remove('hidden');
+        }
+
+        // 게시글 수정
+        async function editPost(id) {
+            try {
+                const response = await fetch(`http://localhost:3000/api/posts/admin/posts/${id}`);
+                const post = await response.json();
+
+                document.getElementById('modalTitle').textContent = '게시글 수정';
+                document.getElementById('postId').value = post._id;
+                document.getElementById('postTitle').value = post.title;
+                document.getElementById('postCategory').value = post.category;
+                document.getElementById('postTags').value = post.tags.join(', ');
+                document.getElementById('postExcerpt').value = post.excerpt;
+                document.getElementById('isSubscriberOnly').checked = post.isSubscriberOnly;
+
+                if (!editor) {
+                    editor = new EasyMDE({
+                        element: document.getElementById('postContent'),
+                        spellChecker: false,
+                        autosave: {
+                            enabled: true,
+                            uniqueId: 'postEditor'
+                        }
+                    });
+                }
+                editor.value(post.content);
+
+                document.getElementById('postModal').classList.remove('hidden');
+            } catch (error) {
+                console.error('게시글 로드 실패:', error);
+                alert('게시글을 불러오는데 실패했습니다.');
+            }
+        }
+
+        // 모달 닫기
+        function closePostModal() {
+            document.getElementById('postModal').classList.add('hidden');
+        }
+
+        // 게시글 저장
+        async function handlePostSubmit(event) {
+            event.preventDefault();
+            await savePost('published');
+        }
+
+        async function handleSaveDraft() {
+            await savePost('draft');
+        }
+
+        async function savePost(status) {
+            try {
+                const postId = document.getElementById('postId').value;
+                const postData = {
+                    title: document.getElementById('postTitle').value,
+                    content: editor.value(),
+                    excerpt: document.getElementById('postExcerpt').value,
+                    category: document.getElementById('postCategory').value,
+                    tags: document.getElementById('postTags').value.split(',').map(tag => tag.trim()).filter(Boolean),
+                    isSubscriberOnly: document.getElementById('isSubscriberOnly').checked,
+                    status
+                };
+
+                const url = postId ? 
+                    `http://localhost:3000/api/posts/admin/posts/${postId}` :
+                    'http://localhost:3000/api/posts/admin/posts';
+                
+                const response = await fetch(url, {
+                    method: postId ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(postData)
+                });
+
+                if (response.ok) {
+                    closePostModal();
+                    updatePostsList();
+                    updateStats();
+                    alert(status === 'published' ? '게시글이 발행되었습니다.' : '임시저장되었습니다.');
+                } else {
+                    alert('게시글 저장에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('게시글 저장 실패:', error);
+                alert('게시글 저장 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 게시글 삭제
+        async function deletePost(id) {
+            if (!confirm('정말 이 게시글을 삭제하시겠습니까?')) return;
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/posts/admin/posts/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    updatePostsList();
+                    updateStats();
+                    alert('게시글이 삭제되었습니다.');
+                } else {
+                    alert('게시글 삭제에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('게시글 삭제 실패:', error);
+                alert('게시글 삭제 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 초기 데이터 로드
+        document.addEventListener('DOMContentLoaded', () => {
+            updatePostsList();
+            updateStats();
+        });
+    </script>
+</body>
+</html> 

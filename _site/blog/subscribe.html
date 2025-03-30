@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>구독하기 - 브레이든의 지식 저장소</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <h1 class="site-title"><a href="/">브레이든의 지식 저장소</a></h1>
+            <nav class="site-nav">
+                <a href="/">홈</a>
+                <a href="/posts.html">글 목록</a>
+                <a href="/about.html">소개</a>
+                <a href="/subscribe.html">구독하기</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <article class="post">
+            <header class="post-header">
+                <h1 class="post-title">구독하기</h1>
+            </header>
+
+            <div class="post-content">
+                <p>구독자에게 제공되는 특별한 혜택:</p>
+                <ul>
+                    <li>구독자 전용 콘텐츠 접근</li>
+                    <li>새로운 글 알림</li>
+                    <li>특별한 이벤트 참여 기회</li>
+                    <li>커뮤니티 멤버십</li>
+                </ul>
+
+                <form id="subscribe-form" class="subscribe-form">
+                    <div class="form-group">
+                        <label for="email">이메일 주소</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="name">이름</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <button type="submit" class="cta-button">구독하기</button>
+                </form>
+
+                <div id="subscribe-message" class="subscribe-message"></div>
+            </div>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; 2024 브레이든의 지식 저장소. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('subscribe-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const name = document.getElementById('name').value;
+            const messageDiv = document.getElementById('subscribe-message');
+
+            try {
+                const response = await fetch('http://localhost:3000/api/subscribers', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, name })
+                });
+
+                if (response.ok) {
+                    messageDiv.textContent = '구독이 완료되었습니다!';
+                    messageDiv.className = 'subscribe-message success';
+                    e.target.reset();
+                } else {
+                    const data = await response.json();
+                    messageDiv.textContent = data.message || '구독 중 오류가 발생했습니다.';
+                    messageDiv.className = 'subscribe-message error';
+                }
+            } catch (error) {
+                messageDiv.textContent = '서버 오류가 발생했습니다.';
+                messageDiv.className = 'subscribe-message error';
+            }
+        });
+    </script>
+</body>
+</html> 

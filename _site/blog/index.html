@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>브레이든의 지식 저장소</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <h1 class="site-title">브레이든의 지식 저장소</h1>
+            <nav class="site-nav">
+                <a href="/">홈</a>
+                <a href="/posts.html">글 목록</a>
+                <a href="/about.html">소개</a>
+                <a href="/subscribe.html">구독하기</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="hero">
+            <h2>지식을 공유하고 성장하세요</h2>
+            <p>브레이든의 지식 저장소에서 다양한 주제의 글을 읽고 구독하세요.</p>
+            <a href="/subscribe.html" class="cta-button">구독하기</a>
+        </section>
+
+        <section class="latest-posts">
+            <h2>최신 글</h2>
+            <div class="posts-grid" id="latestPosts">
+                <!-- 최신 글들이 여기에 동적으로 추가됩니다 -->
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; 2024 브레이든의 지식 저장소. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // 최신 글 로드
+        async function loadLatestPosts() {
+            try {
+                const response = await fetch('http://localhost:3000/api/posts/latest');
+                const posts = await response.json();
+                
+                const postsGrid = document.getElementById('latestPosts');
+                postsGrid.innerHTML = posts.map(post => `
+                    <article class="post-card">
+                        <h3><a href="${post.slug}.html">${post.title}</a></h3>
+                        <div class="post-meta">
+                            <span class="date">${new Date(post.publishedAt).toLocaleDateString('ko-KR')}</span>
+                            <span class="category">${post.category}</span>
+                        </div>
+                        <p>${post.excerpt}</p>
+                    </article>
+                `).join('');
+            } catch (error) {
+                console.error('최신 글 로드 실패:', error);
+            }
+        }
+
+        // 페이지 로드 시 최신 글 로드
+        document.addEventListener('DOMContentLoaded', loadLatestPosts);
+    </script>
+</body>
+</html> 

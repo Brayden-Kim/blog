@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4a90e2">
+    <link rel="manifest" href="/blog/manifest.json">
+    <link rel="icon" type="image/png" sizes="512x512" href="/blog/icons/logo.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/blog/icons/logo.png">
+    <title>구독하기 - 브레이든의 지식 저장소</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #fafafa;
+        }
+
+        /* 네비게이션 바 */
+        .nav-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-link {
+            position: relative;
+            padding: 1.25rem 1rem;
+            font-size: 0.925rem;
+            color: #4b5563;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            letter-spacing: -0.025em;
+        }
+
+        .nav-link:hover {
+            color: #4f46e5;
+        }
+
+        .nav-link.active {
+            color: #4f46e5;
+            font-weight: 600;
+        }
+
+        .nav-link::after {
+            content: "";
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .nav-link:hover::after,
+        .nav-link.active::after {
+            transform: scaleX(1);
+        }
+
+        .nav-brand {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .subscribe-button {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.1);
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+        }
+
+        .subscribe-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(79, 70, 229, 0.2);
+        }
+
+        /* 구독 폼 스타일 */
+        .subscribe-card {
+            background: white;
+            border-radius: 24px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+        }
+
+        .benefit-card {
+            background: white;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+        }
+
+        .benefit-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+        }
+
+        .benefit-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f9fafb;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #4f46e5;
+            background: white;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+        }
+
+        .submit-button {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(79, 70, 229, 0.2);
+        }
+
+        /* 모달 스타일 */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-backdrop.show {
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transform: scale(0.95) translateY(-10px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .modal-content.show {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+
+        .privacy-content {
+            max-height: 60vh;
+            overflow-y: auto;
+            padding-right: 1rem;
+            margin-right: -1rem;
+        }
+
+        .privacy-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .privacy-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .privacy-content::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+
+        .privacy-content::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-delay-1 {
+            animation-delay: 0.1s;
+        }
+
+        .fade-in-delay-2 {
+            animation-delay: 0.2s;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: white;
+            margin: 15% auto;
+            padding: 2rem;
+            border-radius: 1rem;
+            max-width: 500px;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from { transform: translateY(-10%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .highlight-animation {
+            animation: highlight 1s ease-in-out;
+        }
+
+        @keyframes highlight {
+            0% { background-color: transparent; }
+            50% { background-color: rgba(139, 92, 246, 0.1); }
+            100% { background-color: transparent; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 네비게이션 바 -->
+    <nav class="nav-container sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="index.html" class="text-xl nav-brand">브레이든의 지식 저장소</a>
+                    </div>
+                    <div class="hidden sm:ml-8 sm:flex sm:space-x-8">
+                        <a href="about.html" class="nav-link">작가 소개</a>
+                        <a href="posts.html" class="nav-link">글</a>
+                        <a href="archive.html" class="nav-link">아카이브</a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <a href="subscribe.html" class="subscribe-button text-sm font-medium text-white">구독하기</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="max-w-4xl mx-auto px-4 py-12">
+        <div class="text-center mb-12 fade-in">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">구독하기</h1>
+            <p class="text-lg text-gray-600">새로운 글이 올라올 때마다 이메일로 알림을 받으세요!</p>
+        </div>
+
+        <!-- 구독 폼 -->
+        <div id="subscribe-section" class="max-w-lg mx-auto bg-white rounded-xl shadow-sm p-8 fade-in fade-in-delay-1">
+            <form id="subscribeForm" class="space-y-6" onsubmit="handleSubscribe(event)">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">이메일</label>
+                    <div class="mt-1">
+                        <input type="email" name="email" id="email" required
+                               class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" 
+                               placeholder="your@email.com">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">이름</label>
+                    <div class="mt-1">
+                        <input type="text" name="name" id="name" required
+                               class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" 
+                               placeholder="Your Name">
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <div class="flex items-center h-5">
+                        <input id="terms" name="terms" type="checkbox" required
+                               class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                    </div>
+                    <div class="ml-3">
+                        <label for="terms" class="text-sm text-gray-500">
+                            <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">개인정보 처리방침</a>에 동의합니다
+                        </label>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <button type="submit" id="subscribeButton"
+                            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        구독하기
+                    </button>
+                    <button type="button" id="unsubscribeButton" onclick="handleUnsubscribe()"
+                            class="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 hidden">
+                        구독 취소
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 구독 완료 모달 -->
+        <div id="subscribeModal" class="modal">
+            <div class="modal-content">
+                <h2 class="text-2xl font-bold mb-4">구독이 완료되었습니다! 🎉</h2>
+                <p class="text-gray-600 mb-6">
+                    이제 모든 구독자 전용 콘텐츠를 자유롭게 읽으실 수 있습니다.<br>
+                    구독 취소는 이 페이지에서 언제든지 가능합니다.
+                </p>
+                <button onclick="closeModal()" 
+                        class="w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors">
+                    확인
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 fade-in fade-in-delay-2">
+            <div class="bg-white rounded-lg p-6 shadow-sm">
+                <h3 class="text-lg font-medium text-gray-900 mb-2">주간 뉴스레터</h3>
+                <p class="text-gray-500">매주 새로운 글과 함께 경영, 경제, 사회, 기술 분야의 주요 소식을 정리해 보내드립니다.</p>
+            </div>
+            <div class="bg-white rounded-lg p-6 shadow-sm">
+                <h3 class="text-lg font-medium text-gray-900 mb-2">구독자 전용 콘텐츠</h3>
+                <p class="text-gray-500">구독자만을 위한 특별한 콘텐츠와 심층 분석 자료를 제공해드립니다.</p>
+            </div>
+            <div class="bg-white rounded-lg p-6 shadow-sm">
+                <h3 class="text-lg font-medium text-gray-900 mb-2">커뮤니티 참여</h3>
+                <p class="text-gray-500">구독자 전용 커뮤니티에서 다양한 의견을 나누고 토론에 참여하실 수 있습니다.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- 개인정보 수집 동의 모달 -->
+    <div id="privacyModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-backdrop absolute inset-0" onclick="hidePrivacyModal()"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="modal-content w-full max-w-2xl bg-white p-6 relative">
+                    <button onclick="hidePrivacyModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-500">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                    <div class="mb-6">
+                        <h3 class="text-xl font-bold text-gray-900">개인정보 수집 및 이용 동의</h3>
+                    </div>
+                    <div class="privacy-content space-y-6 text-gray-600">
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-2">1. 수집하는 개인정보 항목</h4>
+                            <p>- 이메일 주소</p>
+                            <p>- 이름</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-2">2. 수집 및 이용 목적</h4>
+                            <p>- 새로운 글 발행 알림 서비스 제공</p>
+                            <p>- 구독자 전용 콘텐츠 접근 권한 부여</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-2">3. 보유 및 이용 기간</h4>
+                            <p>- 구독 해지 시까지 보관</p>
+                            <p>- 구독자가 직접 해지를 요청하는 경우 즉시 파기</p>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end">
+                        <button onclick="hidePrivacyModal()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                            확인
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 푸터 -->
+    <footer class="bg-white border-t border-gray-200">
+        <div class="max-w-7xl mx-auto py-6 px-4">
+            <p class="text-center text-sm text-gray-500">
+                &copy; 2024 브레이든의 지식 저장소. All rights reserved.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // 모달 제어
+        function showPrivacyModal() {
+            const modal = document.getElementById('privacyModal');
+            const backdrop = modal.querySelector('.modal-backdrop');
+            const content = modal.querySelector('.modal-content');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.add('show');
+                content.classList.add('show');
+            }, 10);
+        }
+
+        function hidePrivacyModal() {
+            const modal = document.getElementById('privacyModal');
+            const backdrop = modal.querySelector('.modal-backdrop');
+            const content = modal.querySelector('.modal-content');
+            
+            backdrop.classList.remove('show');
+            content.classList.remove('show');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function handleSubscribe(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const name = document.getElementById('name').value;
+            
+            // 구독자 정보를 로컬 스토리지에 저장
+            localStorage.setItem('subscriber', JSON.stringify({
+                email: email,
+                name: name,
+                subscribedAt: new Date().toISOString()
+            }));
+            
+            // 구독 완료 모달 표시
+            document.getElementById('subscribeModal').style.display = 'block';
+            
+            // UI 업데이트
+            updateSubscribeUI();
+            
+            // 구독 섹션 하이라이트 효과
+            const subscribeSection = document.getElementById('subscribe-section');
+            subscribeSection.classList.add('highlight-animation');
+        }
+
+        function handleUnsubscribe() {
+            if (confirm('정말 구독을 취소하시겠습니까?')) {
+                localStorage.removeItem('subscriber');
+                updateSubscribeUI();
+                
+                // 구독 취소 후 UI 하이라이트
+                const subscribeSection = document.getElementById('subscribe-section');
+                subscribeSection.classList.add('highlight-animation');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('subscribeModal').style.display = 'none';
+        }
+
+        function updateSubscribeUI() {
+            const subscriber = localStorage.getItem('subscriber');
+            const subscribeButton = document.getElementById('subscribeButton');
+            const unsubscribeButton = document.getElementById('unsubscribeButton');
+            const emailInput = document.getElementById('email');
+            const nameInput = document.getElementById('name');
+            const termsCheckbox = document.getElementById('terms');
+            
+            if (subscriber) {
+                const subscriberData = JSON.parse(subscriber);
+                emailInput.value = subscriberData.email;
+                nameInput.value = subscriberData.name;
+                emailInput.disabled = true;
+                nameInput.disabled = true;
+                termsCheckbox.checked = true;
+                termsCheckbox.disabled = true;
+                subscribeButton.textContent = '구독 중';
+                subscribeButton.disabled = true;
+                unsubscribeButton.classList.remove('hidden');
+            } else {
+                emailInput.value = '';
+                nameInput.value = '';
+                emailInput.disabled = false;
+                nameInput.disabled = false;
+                termsCheckbox.checked = false;
+                termsCheckbox.disabled = false;
+                subscribeButton.textContent = '구독하기';
+                subscribeButton.disabled = false;
+                unsubscribeButton.classList.add('hidden');
+            }
+        }
+
+        // 페이지 로드 시 UI 업데이트
+        document.addEventListener('DOMContentLoaded', updateSubscribeUI);
+
+        // 모달 외부 클릭 시 닫기
+        window.onclick = function(event) {
+            const modal = document.getElementById('subscribeModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html> 

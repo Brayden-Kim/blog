@@ -1,0 +1,115 @@
+/* 기본 스타일 */
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --text-color: #333;
+    --background-color: #fff;
+    --header-height: 60px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--background-color);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* 헤더 스타일 */
+.site-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.site-title {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.site-title a {
+    color: white;
+    text-decoration: none;
+}
+
+.site-nav {
+    margin-top: 1rem;
+}
+
+.site-nav a {
+    color: white;
+    text-decoration: none;
+    margin-right: 1.5rem;
+    transition: color 0.3s;
+}
+
+.site-nav a:hover {
+    color: var(--secondary-color);
+}
+
+/* 메인 콘텐츠 */
+main {
+    padding: 2rem 0;
+}
+
+/* 포스트 스타일 */
+.post {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #eee;
+}
+
+.post-title {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+}
+
+.post-meta {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.post-content {
+    margin-top: 1rem;
+}
+
+/* 푸터 스타일 */
+.site-footer {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 2rem 0;
+    margin-top: 3rem;
+    text-align: center;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .site-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .site-nav a {
+        margin-right: 0;
+    }
+    
+    .post-title {
+        font-size: 1.5rem;
+    }
+} 
