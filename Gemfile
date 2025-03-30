@@ -2,14 +2,14 @@
 
 source "https://rubygems.org"
 
-gem "github-pages", "~> 231", group: :jekyll_plugins
+gem "github-pages", "~> 232"
 gem "webrick"
 
 # Jekyll 플러그인
 group :jekyll_plugins do
-  gem "jekyll-feed", "~> 0.12"
-  gem "jekyll-seo-tag", "~> 2.8"
-  gem "jekyll-sitemap", "~> 1.4"
+  gem "jekyll-feed", "~> 0.17.0"
+  gem "jekyll-seo-tag", "~> 2.8.0"
+  gem "jekyll-sitemap", "~> 1.4.0"
   gem "kramdown-parser-gfm"
 end
 
